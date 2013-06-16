@@ -7,7 +7,7 @@ var config = require('../config');
 var trigger = config.trigger + 'ddg';
 var mesLen = trigger.length + 1;
 
-module.exports = function (client) {
+module.exports = function (irc) {
     'use strict';
 
     var question = function (nick, channel, message) {
@@ -21,7 +21,7 @@ module.exports = function (client) {
         }
 
         function sendToclient(err, links) {
-            return client.say(channel, nick + ': ' + ((!err) ? links : err));
+            return irc.say(channel, nick + ': ' + ((!err) ? links : err));
         }
         
         function getDataFromJson(jsonn, query, cb) {
@@ -72,7 +72,7 @@ module.exports = function (client) {
 
     };
 
-    client.on('message', function (from, to, message) {
+    irc.on('message', function (from, to, message) {
         if (message.indexOf(trigger) === 0) {
             question(from, to, message);
         }

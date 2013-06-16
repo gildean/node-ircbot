@@ -5,7 +5,7 @@ var events = require('events');
 var httpGet = require('http-get-shim');
 var config = require('../config');
 
-var Links = function Links(client) {
+var Links = function Links(irc) {
     'use strict';
     var self = this;
     var urlRegex = /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/?%=~_|][^\s]+)/ig;
@@ -13,9 +13,9 @@ var Links = function Links(client) {
 
     function sendToclient(err, title, channel) {
         if (!err && title) {
-            client.say(channel, title);
+            irc.say(channel, title);
         } else if (err) {
-            client.say(channel, err);
+            irc.say(channel, err);
         }
     }
     
@@ -49,7 +49,7 @@ var Links = function Links(client) {
         .on('gotTitle', parseTitle)
         .on('sendToclient', sendToclient);
     
-    client.on('message', function (from, to, message) {
+    irc.on('message', function (from, to, message) {
         if (from !== config.nick) {
             self.onMessage(to, message);
         }
@@ -58,6 +58,6 @@ var Links = function Links(client) {
 
 util.inherits(Links, events.EventEmitter);
 
-module.exports = function (client) {
-    return new Links(client); 
+module.exports = function (irc) {
+    return new Links(irc); 
 };
