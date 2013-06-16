@@ -1,0 +1,25 @@
+{
+  "name": "ircbot",
+  "version": "0.0.1",
+  "description": "Extensible ircbot",
+  "main": "index.js",
+  "dependencies": {
+    "http-get-shim": "~0.1.0",
+    "irc": "~0.3.6",
+    "rpgdice": "~0.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gildean/node-ircbot.git"
+  },
+  "keywords": [
+    "irc",
+    "bot"
+  ],
+  "author": "Olli K",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "bugs": {
+    "url": "https://github.com/gildean/node-ircbot/issues"
+  }
+}
