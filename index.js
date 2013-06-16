@@ -7,6 +7,6 @@ config.plugins.forEach(function (plugin) {
     plugins[plugin] = require('./plugins/' + plugin)(client);
 });
 
-client.addListener('error', function(message) {
+client.addListener('error', function (message) {
     console.log('error: ', message);
 });

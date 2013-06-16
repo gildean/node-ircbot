@@ -1,12 +1,19 @@
+// rpg-dice rolling plugin
+
 var dice = require('rpgdice');
 var config = require('../config');
 var trigger = config.trigger + 'roll';
 var len = trigger.length + 1;
 
 module.exports = function (client) {
-    client.addListener('message', function (from, to, message) {
+    'use strict';
+    client.on('message', function (from, to, message) {
         if (message.indexOf(trigger) === 0) {
-            dice.roll(message.substring(len), from, to);
+            if (message.length > len) {
+                dice.roll(message.substring(len), from, to);
+            } else {
+                client.say(to, from + ': ' + 'Roll a dice e.g. \'' + trigger + ' 1d6+2\'');
+            }
         }
     });
     dice.on('result', function (dice, rolls, result, roller, game) {

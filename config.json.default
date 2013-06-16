@@ -26,6 +26,9 @@
         "yournick"
     ],
     "plugins": [
-        "roll"
+        "roll",
+        "ddg",
+        "links",
+        "about"
     ]
 }
