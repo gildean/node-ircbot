@@ -1,0 +1,31 @@
+{
+    "trigger": "!",
+    "nick": "botname",
+    "server": "irc.freenode.net",
+    "options": {
+        "userName": "somename",
+        "realName": "Real name maybe",
+        "port": 6667,
+        "debug": false,
+        "showErrors": false,
+        "autoRejoin": true,
+        "autoConnect": true,
+        "secure": false,
+        "selfSigned": false,
+        "certExpired": false,
+        "floodProtection": false,
+        "floodProtectionDelay": 1000,
+        "stripColors": false,
+        "channelPrefixes": "&#",
+        "messageSplit": 512,
+        "channels": [
+            "#node.js"
+        ]
+    },
+    "admins": [
+        "yournick"
+    ],
+    "plugins": [
+        "roll"
+    ]
+}
