@@ -2,6 +2,7 @@
 
 var util = require('util');
 var events = require('events');
+var ent = require('ent');
 var httpGet = require('http-get-shim');
 var config = require('../config');
 
@@ -13,7 +14,7 @@ var Links = function Links(irc) {
 
     function sendToclient(err, title, channel) {
         if (!err && title) {
-            irc.say(channel, title);
+            irc.say(channel, ent.decode(title));
         } else if (err) {
             irc.say(channel, err);
         }

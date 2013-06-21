@@ -6,11 +6,13 @@
   "dependencies": {
     "http-get-shim": "~0.1.0",
     "irc": "~0.3.6",
-    "rpgdice": "~0.2.0"
+    "rpgdice": "~0.2.0",
+    "ent": "0.0.5",
+    "mongojs": "~0.7.6"
   },
   "scripts": {
-     "start": "node ./index.js"
-   },
+    "start": "node ./index.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/gildean/node-ircbot.git"
