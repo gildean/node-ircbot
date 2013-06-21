@@ -11,7 +11,7 @@ Plugins
 -------
 You can create your own plugins and save them under the `/plugins/` directory and add them to the `config.json`. Use the about-plugin as an example.
 
-All plugins should be as self-contained as possible, but for example the quotes-plugin and the logger use mongodb as the default database, so if you use those, you also have to include the following line(s) to the config: `"mongodb": { "address": "mongodb://someaddress/somedb" }`.
+All plugins should be as self-contained as possible, but for example the quotes-plugin uses mongodb as the default database, so if you use those, you also have to include the following line(s) to the config: `"mongodb": { "address": "mongodb://someaddress/somedb" }`.
 
 You can of course modify the database-driven plugins to use whatever database you want, the bot iself is not dependant on any database.
 
