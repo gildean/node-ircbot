@@ -1,23 +1,32 @@
 // plugin for saving and querying quotes
-// requires mongodb to function
+// you can set the path to the leveldb file in the config.json
+// e.g "logs": { "path": "/my/quotes/path" }
  
 var util = require('util'),
+    fs = require('fs'),
     events = require('events'),
-    mongojs = require('mongojs'),
-    config = require('../config');
+    levelup = require('level'),
+    config = require('../config'),
+    quotesPath = (config.quotes && config.quotes.path) ? config.quotes.path : './quotes',
+    quotesPathExists = fs.existsSync(quotesPath);
+
+// make the dir for quotes if it doesn't exist
+if (!quotesPathExists) {
+    fs.mkdirSync(quotesPath);
+}
+
+// create leveldbs for each channel
+var quoteFiles = {};
+config.options.channels.forEach(function (channel) {
+    quoteFiles[channel] = levelup(quotesPath + '/' + channel);
+});
 
 var Quote = function (irc) {
     'use strict';
-    if (!config.mongodb) {
-        return console.log('no mongodb found, quotes-plugin not loaded');
-    }
     var trigger = 'quote',
         helpText = config.trigger + trigger,
         helpTxtLen = helpText.length + 1,
         self = this,
-        db = mongojs.connect(config.mongodb.address),
-        quotecoll = db.collection('quotes'),
-        quoteUserDb = db.collection('quoteUsers'),
         ErrMsg = function ErrMsg(name, message, user) {
             return {
                 name: name,
@@ -29,14 +38,6 @@ var Quote = function (irc) {
         authError = new ErrMsg('Permissions required', 'You don\'t have them', true),
         invalidAction = new ErrMsg('Invalid Action', 'Try again or try: ".quote help".', true),
         ircAdmins = config.admins;
-
-    // ensure the indexes on the db for better performance
-    quotecoll.ensureIndex({ idNumber: 1, nick: 1 }, function (err) {
-        if (err) {
-            throw new Error('Quotes plugin requires mongodb to function, disable the plugin or get your mongo on.');
-        };
-    });
-    quoteUserDb.ensureIndex({ name: 1 });
     
     function has(ar, el) {
         return ar.indexOf(el) > -1;

@@ -29,6 +29,11 @@
         "roll",
         "ddg",
         "links",
-        "about"
-    ]
+        "about",
+        "logger"
+    ],
+    "logs": {
+        "dir": "./logs",
+        "http": 9084
+    }
 }
