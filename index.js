@@ -1,3 +1,6 @@
+// node-ircbot by: ok 2013
+// license: MIT (http://ok.mit-license.org)
+// set your configs to config.json before running
 var irc = require('irc');
 var config = require('./config');
 var client = new irc.Client(config.server, config.nick, config.options);
