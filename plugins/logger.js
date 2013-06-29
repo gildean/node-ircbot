@@ -22,7 +22,7 @@ var logDb = subLevel(levelup(logPath + '/logDb'));
 // create a sublevel for each channel log and create a writable stream
 var logFiles = {};
 config.options.channels.forEach(function (channel) {
-    logFiles[channel] = logDb.sublevel(channel);
+    logFiles[channel] = logDb.sublevel(channel, { valueEncoding: 'json' });
     logFiles[channel].ws = logFiles[channel].createWriteStream({ type: 'put', valueEncoding: 'json' });
 });
 
@@ -57,8 +57,7 @@ module.exports = function (irc) {
                 res.writeHead(200, {'Content-Type': 'text/plain'});
                 logFiles[ch].createReadStream()
                 .on('data', function (data) {
-                    var d = JSON.parse(data.value);
-                    res.write(data.key + ' <' + d.nick + '> ' + d.message + '\n');
+                    res.write(data.key + ' <' + data.value.nick + '> ' + data.value.message + '\n');
                 })
                 .on('end', function () {
                     res.end('\n');
