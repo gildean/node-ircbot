@@ -3,12 +3,13 @@
 var dice = require('rpgdice');
 var config = require('../config');
 var trigger = config.trigger + 'roll';
+var regExp = '^' + trigger;
 var len = trigger.length + 1;
 
 module.exports = function (irc) {
     'use strict';
     irc.on('message', function (from, to, message) {
-        if (message.indexOf(trigger) === 0) {
+        if (message.match(regExp)) {
             if (message.length > len) {
                 dice.roll(message.substring(len), from, to);
             } else {

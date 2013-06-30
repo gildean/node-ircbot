@@ -1,7 +1,7 @@
 // logging plugin
 //
-// the timestamp is in seconds from epoch
-// if you want the logs to be accessible through http 
+// the timestamp is in milliseconds from epoch
+// if you want the logs to be accessible through http
 // and/or if you want to use a custom dir for the log-db, set those in the config.json
 // e.g. "logs": { "http": 9084, "path": "/my/custom/logdir" }
 
@@ -11,6 +11,7 @@ var subLevel = require('level-sublevel');
 var config = require('../config');
 var logPath = (config.logs && config.logs.path) ? config.logs.path : './logs';
 var logDirExists = fs.existsSync(logPath);
+var selfNick = config.nick;
 
 // make the dir for logs if it doesn't exist
 if (!logDirExists) {
@@ -27,15 +28,62 @@ config.options.channels.forEach(function (channel) {
 });
 
 // a helper function to return epoch in seconds
-function nowSec() {
-    return Math.round(Date.now() / 1000);
+function nowSec(n) {
+    return Math.round(parseInt(n) / 1000);
 }
+
 
 module.exports = function (irc) {
 
     // on a message-event, write to the channel-log stream
-    irc.on('message', function (nick, channel, message) {
-        logFiles[channel].ws.write({ key: nowSec(), value: { nick: nick, message: message } });
+    irc
+    .on('selfMessage', function (channel, message) {
+        // this delays the writing of the messages sent by the bot, as they happen faster than other messages
+        setTimeout(function() {
+            logFiles[channel].ws.write({ key: Date.now(), value: { type: 'message', nick: selfNick, message: message } });
+        }, 2);
+    })
+    .on('message', function (nick, channel, message) {
+        logFiles[channel].ws.write({ key: Date.now(), value: { type: 'message', nick: nick, message: message } });
+    })
+    .on('topic', function (channel, topic, nick, message) {
+        logFiles[channel].ws.write({ key: Date.now(), value: { type: 'topic', nick: nick, message: topic } });
+    })
+    .on('join', function (channel, nick, message) {
+        logFiles[channel].ws.write({ key: Date.now(), value: { type: 'join', nick: nick } });
+    })
+    .on('part', function (channel, nick, reason, message) {
+        logFiles[channel].ws.write({ key: Date.now(), value: { type: 'part', nick: nick, message: reason } });
+    })
+    .on('quit', function (nick, reason, channels, message) {
+        channels.forEach(function (channel) {
+            if (logFiles.hasOwnProperty(channel)) {
+                logFiles[channel].ws.write({ key: Date.now(), value: { type: 'quit', nick: nick, message: reason } });
+            }
+        });
+    })
+    .on('kick', function (channel, nick, by, reason, message) {
+        logFiles[channel].ws.write({ key: Date.now(), value: { type: 'kick', nick: nick, message: reason, by: by } });
+    })
+    .on('kill', function (nick, reason, channels, message) {
+        channels.forEach(function (channel) {
+            if (logFiles.hasOwnProperty(channel)) {
+                logFiles[channel].ws.write({ key: Date.now(), value: { type: 'kill', nick: nick, message: reason } });
+            }
+        });
+    })
+    .on('+mode', function (channel, by, mode, argument, message) {
+        logFiles[channel].ws.write({ key: Date.now(), value: { type: '+mode', nick: by, message: mode, argument: argument } });
+    })
+    .on('-mode', function (channel, by, mode, argument, message) {
+        logFiles[channel].ws.write({ key: Date.now(), value: { type: '-mode', nick: by, message: mode, argument: argument } });
+    })
+    .on('nick', function (oldnick, newnick, channels, message) {
+        channels.forEach(function (channel) {
+            if (logFiles.hasOwnProperty(channel)) {
+                logFiles[channel].ws.write({ key: Date.now(), value: { type: 'nick', nick: oldnick, message: newnick } });
+            }
+        });
     });
 
     // make some simple html for the possible http-server
@@ -57,7 +105,40 @@ module.exports = function (irc) {
                 res.writeHead(200, {'Content-Type': 'text/plain'});
                 logFiles[ch].createReadStream()
                 .on('data', function (data) {
-                    res.write(data.key + ' <' + data.value.nick + '> ' + data.value.message + '\n');
+                    var msg = '';
+                    switch (data.value.type) {
+                        case 'message':
+                            msg = nowSec(data.key) + ' <' + data.value.nick + '> ' + data.value.message + '\n';
+                            break;
+                        case 'topic':
+                            msg = nowSec(data.key) + ' -- Topic: ' + data.value.message + ' -- set by: ' + data.value.nick + '\n';
+                            break;
+                        case 'join':
+                            msg = nowSec(data.key) + ' -- ' + data.value.nick + ' joined' + '\n';
+                            break;
+                        case 'part':
+                            msg = nowSec(data.key) + ' -- ' + data.value.nick + ' parted: [' + data.value.message + ']' + '\n';
+                            break;
+                        case 'quit':
+                            msg = nowSec(data.key) + ' -- ' + data.value.nick + ' quits: [' + data.value.message + ']' + '\n';
+                            break;
+                        case 'kick':
+                            msg = nowSec(data.key) + ' -- ' + data.value.nick + ' was kicked by: ' + data.value.by + ' [' + data.value.message + ']' + '\n';
+                            break;
+                        case 'kill':
+                            msg = nowSec(data.key) + ' -- ' + data.value.nick + ' was killed: [' + data.value.message + ']' + '\n';
+                            break;
+                        case '+mode':
+                            msg = nowSec(data.key) + ' -- ' + data.value.nick + ' sets mode: +' + data.value.message + ' to: ' + data.value.argument + '\n';
+                            break;
+                        case '-mode':
+                            msg = nowSec(data.key) + ' -- ' + data.value.nick + ' sets mode: -' + data.value.message + ' to: ' + data.value.argument + '\n';
+                            break;
+                        case 'nick':
+                            msg = nowSec(data.key) + ' -- ' + data.value.nick + ' is now known as: ' + data.value.message + '\n';
+                            break;
+                    }
+                    res.write(msg);
                 })
                 .on('end', function () {
                     res.end('\n');

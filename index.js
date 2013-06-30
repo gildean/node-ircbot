@@ -12,6 +12,7 @@ config.plugins.forEach(function (plugin) {
 });
 
 // adding a listener for errors, this prevents crashing on otherwise unhandled errors
+// note: the plugins should always handle their own errors still
 client.addListener('error', function (message) {
     console.log('error: ', message);
 });

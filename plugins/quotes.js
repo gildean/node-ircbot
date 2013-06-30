@@ -64,6 +64,7 @@ var Quote = function (irc) {
     function mainFn() {
         var trigger = 'quote',
             helpText = config.trigger + trigger,
+            triggerTxt = '^' + helpText,
             helpTxtLen = helpText.length + 1,
             ErrMsg = function ErrMsg(name, message, user) {
                 return {
@@ -375,7 +376,7 @@ var Quote = function (irc) {
 
         // attach a listener for the messages
         irc.on('message', function (nick, channel, message) {
-            if (message.indexOf(helpText) === 0) {
+            if (message.match(triggerTxt)) {
                 quote(nick, channel, message);
             }
         });

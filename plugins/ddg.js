@@ -4,8 +4,9 @@ var qs = require('querystring');
 var url = require('url');
 var httpGet = require('http-get-shim');
 var config = require('../config');
-var trigger = config.trigger + 'ddg';
-var mesLen = trigger.length + 1;
+var hlptext = config.trigger + 'ddg';
+var trigger = '^' + hlptext;
+var mesLen = hlptext.length + 1;
 
 module.exports = function (irc) {
     'use strict';
@@ -66,14 +67,14 @@ module.exports = function (irc) {
                     }
                 });
             } else {
-                return cb('DuckDuckGo e.g. \'' + trigger + ' define google\' or \'' + trigger + ' 10+20*50\'', null);
+                return cb('DuckDuckGo e.g. \'' + hlptext + ' define google\' or \'' + hlptext + ' 10+20*50\'', null);
             }
         }(message, handleAnswer));
 
     };
 
     irc.on('message', function (from, to, message) {
-        if (message.indexOf(trigger) === 0) {
+        if (message.match(trigger)) {
             question(from, to, message);
         }
     });
