@@ -30,7 +30,8 @@
         "ddg",
         "links",
         "about",
-        "logger"
+        "logger",
+        "actions"
     ],
     "logs": {
         "dir": "./logs",
