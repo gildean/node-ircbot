@@ -100,7 +100,7 @@ module.exports = function (irc) {
                         if (auto[1].match('^de')) {
                             actionFiles[channel].del(autoUser, function (err) {
                                 if (!err) {
-                                    irc.say(channel, 'Removed' calledAction + ' from ' + calledUser);
+                                    irc.say(channel, 'Removed' calledAction.replace('de', '') + ' from ' + calledUser);
                                 } else {
                                     irc.say(channel, 'Error: ' + err.message);
                                 }
