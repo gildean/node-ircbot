@@ -12,6 +12,7 @@ pids
 logs
 quotes
 results
+actions
 
 config.json
 npm-debug.log
