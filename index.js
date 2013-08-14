@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // node-ircbot by: ok 2013
 // license: MIT (http://ok.mit-license.org)
 // set your configs to config.json before running

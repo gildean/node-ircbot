@@ -4,9 +4,13 @@ var levelup = require('level');
 var subLevel = require('level-sublevel');
 var config = require('../config');
 var trigger = config.trigger;
+var protect = config.protect;
 var admins = config.admins;
 var actionsPath = (config.actions && config.actions.path) ? config.actions.path : './actions';
 var actionsPathExists = fs.existsSync(actionsPath);
+var plus = '+';
+var minus = '-';
+var at = '@';
 
 // make the dir for logs if it doesn't exist
 if (!actionsPathExists) {
@@ -73,6 +77,12 @@ module.exports = function (irc) {
             val: '-v'
         }
     };
+    var actionKeys = {};
+    Object.keys(actions).forEach(function (action) {
+        if (actions[action].hasOwnProperty('val') && !action.match('^auto')) {
+            actionKeys[actions[action].val] = action;
+        }
+    });
 
     // helper function for sending the actions to irc
     var sendAction = function sendAction(calledAction, calledUser, channel) {
@@ -85,8 +95,66 @@ module.exports = function (irc) {
     };
 
 
+    var protectMode = function protectMode(channel, by, mode, argument, modifier) {
+        irc.whois(argument, function (info) {
+            if (info.user && info.host) {
+                var calledAction;
+                var autoUser = info.user + at + info.host;
+                actionFiles[channel].get(autoUser, function (err, value) {
+                    if (!err && value) {
+                        var setting = 'auto-' + actionKeys[plus + mode];
+                        if (value === setting) {
+                            if (modifier === plus) {
+                                return;
+                            }
+                            calledAction = actionKeys[plus + mode];
+                            sendAction(calledAction, argument, channel);
+                        } else {
+                            if (modifier === plus) {
+                                calledAction = actionKeys[minus + mode];
+                                sendAction(calledAction, argument, channel);
+                            }
+                        }
+                    } else if (err || !data) {
+                        if (admins.indexOf(by) > -1) {
+                            return;
+                        }
+                        if (modifier === plus) {
+                            calledAction = actionKeys[minus + mode];
+                            sendAction(calledAction, argument, channel);
+                        }
+                    }
+                });
+            }
+        });
+    };
+
     // attach listeners for the message and join events
     irc
+    .on('registered', function () {
+        irc.whois(config.nick, function (self) {
+            if (self.user && self.host) {
+                var selfName = self.user + at + self.host;
+                Object.keys(actionFiles).forEach(function (chan) {
+                    actionFiles[chan].put(selfName, 'auto-op', function (err) {
+                        if (err) {
+                            throw err;
+                        }
+                    });
+                });
+            }
+        });
+    })
+    .on('+mode', function (channel, by, mode, argument, message) {
+        if (protect && actionFiles.hasOwnProperty(channel) && argument.length > 1) {
+            protectMode(channel, by, mode, argument, '+');
+        }
+    })
+    .on('-mode', function (channel, by, mode, argument, message) {
+        if (protect && actionFiles.hasOwnProperty(channel) && argument.length > 1) {
+            protectMode(channel, by, mode, argument, '-');
+        }
+    })
     .on('message', function (from, channel, message) {
         var msgPart = message.replace(config.trigger, '').split(' ');
         var calledAction = msgPart[0];
