@@ -23,16 +23,17 @@
         ]
     },
     "admins": [
-        "yournick"
+        "user@host.tld"
     ],
     "plugins": [
-        "roll",
+        "about",
+        "actions",
         "ddg",
         "links",
-        "about",
         "logger",
-        "actions"
+        "roll"
     ],
+    "protect": false,
     "logs": {
         "dir": "./logs",
         "http": 9084

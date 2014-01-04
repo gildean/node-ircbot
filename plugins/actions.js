@@ -11,6 +11,7 @@ var actionsPathExists = fs.existsSync(actionsPath);
 var plus = '+';
 var minus = '-';
 var at = '@';
+var helpTrigger = trigger + 'actions';
 
 // make the dir for logs if it doesn't exist
 if (!actionsPathExists) {
@@ -78,7 +79,8 @@ module.exports = function (irc) {
         }
     };
     var actionKeys = {};
-    Object.keys(actions).forEach(function (action) {
+    var allActionsArr = Object.keys(actions);
+    allActionsArr.forEach(function (action) {
         if (actions[action].hasOwnProperty('val') && !action.match('^auto')) {
             actionKeys[actions[action].val] = action;
         }
@@ -93,7 +95,6 @@ module.exports = function (irc) {
             irc.send(action.msg, channel, calledUser);
         }
     };
-
 
     var protectMode = function protectMode(channel, by, mode, argument, modifier) {
         irc.whois(argument, function (info) {
@@ -116,20 +117,52 @@ module.exports = function (irc) {
                             }
                         }
                     } else if (err || !data) {
-                        if (admins.indexOf(by) > -1) {
-                            return;
-                        }
-                        if (modifier === plus) {
-                            calledAction = actionKeys[minus + mode];
-                            sendAction(calledAction, argument, channel);
-                        }
+                        irc.whois(by, function (byinfo) {
+                            if (admins.indexOf(byinfo.user + at + byinfo.host) > -1) {
+                                return;
+                            }
+                            if (modifier === plus) {
+                                calledAction = actionKeys[minus + mode];
+                                sendAction(calledAction, argument, channel);
+                            }
+                        });
                     }
                 });
             }
         });
     };
 
-    // attach listeners for the message and join events
+    var commitAction = function commitAction(calledUser, calledAction, channel, auto) {
+        if (auto.length > 1) {
+            irc.whois(calledUser, function (info) {
+                if (info.user && info.host) {
+                    var autoUser = info.user + at + info.host;
+                    if (auto[1].match('^de')) {
+                        actionFiles[channel].del(autoUser, function (err) {
+                            if (!err) {
+                                irc.say(channel, 'Removed ' + calledAction.replace('de', '') + ' from ' + calledUser);
+                            } else {
+                                irc.say(channel, 'Error: ' + err.message);
+                            }
+                        });
+                    } else {
+                        actionFiles[channel].put(autoUser, calledAction, function (err) {
+                            if (!err) {
+                                irc.say(channel, 'Added ' + calledAction + ' to ' + calledUser);
+                            } else {
+                                irc.say(channel, 'Error: ' + err.message);
+                            }
+                        });
+                    }
+                } else {
+                    irc.say(channel, 'No such user');
+                }
+            });
+        }
+        sendAction(calledAction, calledUser, channel);
+    };
+
+    // attach listeners for the message, modechange, and join events
     irc
     .on('registered', function () {
         irc.whois(config.nick, function (self) {
@@ -146,52 +179,29 @@ module.exports = function (irc) {
         });
     })
     .on('+mode', function (channel, by, mode, argument, message) {
-        if (protect && actionFiles.hasOwnProperty(channel) && argument.length > 1) {
+        if (protect && actionFiles.hasOwnProperty(channel) && argument && argument.length > 1) {
             protectMode(channel, by, mode, argument, '+');
         }
     })
     .on('-mode', function (channel, by, mode, argument, message) {
-        if (protect && actionFiles.hasOwnProperty(channel) && argument.length > 1) {
+        if (protect && actionFiles.hasOwnProperty(channel) && argument && argument.length > 1) {
             protectMode(channel, by, mode, argument, '-');
         }
     })
-    .on('message', function (from, channel, message) {
+    .on('message', function (from, channel, message, rawMessage) {
         var msgPart = message.replace(config.trigger, '').split(' ');
-        var calledAction = msgPart[0];
-        var calledUser = msgPart[1];
-        if (actions.hasOwnProperty(calledAction) && admins.indexOf(from) > -1) {
+        var calledAction = msgPart.splice(0,1).toString();
+        if (actions.hasOwnProperty(calledAction) && admins.indexOf(rawMessage.user + at + rawMessage.host) > -1) {
             var auto = calledAction.split('-');
-            if (auto.length > 1) {
-                irc.whois(calledUser, function (info) {
-                    if (info.user && info.host) {
-                        var autoUser = info.user + '@' + info.host;
-                        if (auto[1].match('^de')) {
-                            actionFiles[channel].del(autoUser, function (err) {
-                                if (!err) {
-                                    irc.say(channel, 'Removed ' + calledAction.replace('de', '') + ' from ' + calledUser);
-                                } else {
-                                    irc.say(channel, 'Error: ' + err.message);
-                                }
-                            });
-                        } else {
-                            actionFiles[channel].put(autoUser, calledAction, function (err) {
-                                if (!err) {
-                                    irc.say(channel, 'Added ' + calledAction + ' to ' + calledUser);
-                                } else {
-                                    irc.say(channel, 'Error: ' + err.message);
-                                }
-                            });
-                        }
-                    } else {
-                        irc.say(channel, 'No such user');
-                    }
-                });
-            }
-            sendAction(calledAction, calledUser, channel);
+            msgPart.forEach(function (user) {
+                commitAction(user, calledAction, channel, auto);
+            });
+        } else if (message === helpTrigger) {
+            irc.say(channel, 'Available actions: ' + allActionsArr.join(', '));
         }
     })
     .on('join', function (channel, nick, message) {
-        var getAutoUser = message.user + '@' + message.host;
+        var getAutoUser = message.user + at + message.host;
         actionFiles[channel].get(getAutoUser, function (err, value) {
             if (!err && value) {
                 sendAction(value, nick, channel);
