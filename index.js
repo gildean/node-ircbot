@@ -6,6 +6,7 @@
 var irc = require('irc');
 var config = require('./config');
 var client = new irc.Client(config.server, config.nick, config.options);
+var util = require('util');
 var plugins = {};
 
 // load up all plugins
@@ -15,6 +16,13 @@ config.plugins.forEach(function (plugin) {
 
 // adding a listener for errors, this prevents crashing on otherwise unhandled errors
 // note: the plugins should always handle their own errors still
-client.addListener('error', function (message) {
-    console.log('error: ', message);
-});
+client
+	.addListener('error', function (message) {
+		util.log('Error:');
+	    console.error(message);
+	})
+	.addListener('registered', function () {
+		util.log('connected to irc');
+	});
+
+util.log('node-ircbot started');
