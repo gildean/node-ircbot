@@ -79,8 +79,8 @@ var Quote = function (irc) {
             ircAdmins = config.admins;
 
          // main function
-        var quote = function quote(nick, channel, message) {
-            self.emit('message', channel, nick, message);
+        var quote = function quote(nick, channel, message, rawMessage) {
+            self.emit('message', channel, nick, message, rawMessage);
         },
 
         throwErr = function throwErr(channel, nick, err) {
@@ -117,9 +117,9 @@ var Quote = function (irc) {
             }
         },
 
-        findAndVerifyUser = function findAndVerifyUser(channel, nick, callback) {
+        findAndVerifyUser = function findAndVerifyUser(channel, nick, sender, callback) {
             userFiles[channel].get(nick, function (err, foundUser) {
-                if ((foundUser && foundUser === 'true') || has(ircAdmins, nick)) {
+                if ((foundUser && foundUser === 'true') || has(ircAdmins, sender)) {
                     callback(null, true);
                 } else {
                     callback(authError, false);
@@ -182,8 +182,8 @@ var Quote = function (irc) {
                 });
         },
 
-        adminAction = function adminAction(channel, nick, message) {
-            findAndVerifyUser(channel, nick, function (err, verified) {
+        adminAction = function adminAction(channel, nick, message, sender) {
+            findAndVerifyUser(channel, nick, sender, function (err, verified) {
                 if (!err && verified) {
                     var action = message[1],
                         target, admin;
@@ -275,9 +275,9 @@ var Quote = function (irc) {
             });
         },
 
-        addQuote = function addQuote(channel, nick, message) {
+        addQuote = function addQuote(channel, nick, message, sender) {
             userFiles[channel].get(nick, function (err, user) {
-                if (!err && (user || has(ircAdmins, nick))) {
+                if (!err && (user || has(ircAdmins, sender))) {
                     var quoteduser = message[1].replace(':','').replace('<','').replace('>','').replace(' ',''),
                         searchname = quoteduser.toLowerCase(),
                         quoteMsg = message.slice(2).join(' ');
@@ -300,14 +300,14 @@ var Quote = function (irc) {
             });
         },
 
-        rmQuote = function rmQuote(channel, nick, message) {
+        rmQuote = function rmQuote(channel, nick, message, sender) {
             var idNumber = message[1];
             if (idNumber.match(/^\d/)) {
                 userFiles[channel].get(nick, function (err, user) {
-                    if (!err && (user || has(ircAdmins, nick))) {
+                    if (!err && (user || has(ircAdmins, sender))) {
                         quotesFiles[channel].get(idNumber, function (err, found) {
                             if (!err && found) {
-                                if (nick === found.owner || (user && user.admin === 'true') || has(ircAdmins, nick)) {
+                                if (nick === found.owner || (user && user.admin === 'true') || has(ircAdmins, sender)) {
                                     quotesFiles[channel].del(idNumber, function (err) {
                                         if (!err) {
                                             self.emit('confirmAction', channel, nick, idNumber, 'deleted', 'quote');
@@ -332,22 +332,23 @@ var Quote = function (irc) {
             }
         },
 
-        parseMessage = function parseMessage(channel, nick, msg) {
+        parseMessage = function parseMessage(channel, nick, msg, rawMsg) {
             if (msg !== helpText) {
                 var message = msg.substr(helpTxtLen).trim().split(' '),
                     msgLen = message.length,
-                    command = message[0].substr(0,4).trim();
+                    command = message[0].substr(0,4).trim(),
+                    sender = rawMsg.user + '@' + rawMsg.host;
 
                 if (command === 'help') {
                     self.emit('help', channel, message);
                 } else if (msgLen === 1) {
                     self.emit('getQuote', channel, nick, message);
                 } else if (command === 'add' && msgLen > 2) {
-                    self.emit('addQuote', channel, nick, message);
+                    self.emit('addQuote', channel, nick, message, sender);
                 } else if ((command === 'rm' || command === 'remove') && msgLen > 1) {
-                    self.emit('rmQuote', channel, nick, message);
+                    self.emit('rmQuote', channel, nick, message, sender);
                 } else if (command === 'user' && msgLen > 1) {
-                    self.emit('adminAction', channel, nick, message);
+                    self.emit('adminAction', channel, nick, message, sender);
                 } else {
                     self.emit('quoteError', channel, nick, invalidAction);
                 }
@@ -375,9 +376,9 @@ var Quote = function (irc) {
             .on('quoteError', throwErr);
 
         // attach a listener for the messages
-        irc.on('message', function (nick, channel, message) {
+        irc.on('message', function (nick, channel, message, rawMessage) {
             if (message.match(triggerTxt)) {
-                quote(nick, channel, message);
+                quote(nick, channel, message, rawMessage);
             }
         });
     }
