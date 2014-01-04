@@ -7,8 +7,8 @@
     "irc": "~0.3.6",
     "rpgdice": "~0.2.0",
     "ent": "0.0.5",
-    "level": "~0.10.0",
-    "level-sublevel": "~4.7.0",
+    "level": "~0.18.0",
+    "level-sublevel": "~5.2.0",
     "moment": "~2.1.0",
     "http-get-shim": "~0.1.1"
   },
