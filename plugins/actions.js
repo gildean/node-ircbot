@@ -179,12 +179,12 @@ module.exports = function (irc) {
         });
     })
     .on('+mode', function (channel, by, mode, argument, message) {
-        if (protect && actionFiles.hasOwnProperty(channel) && argument && argument.length > 1) {
+        if (protect && actionFiles.hasOwnProperty(channel) && argument && by && by !== config.nick && argument.length > 1) {
             protectMode(channel, by, mode, argument, '+');
         }
     })
     .on('-mode', function (channel, by, mode, argument, message) {
-        if (protect && actionFiles.hasOwnProperty(channel) && argument && argument.length > 1) {
+        if (protect && actionFiles.hasOwnProperty(channel) && argument && by && by !== config.nick && argument.length > 1) {
             protectMode(channel, by, mode, argument, '-');
         }
     })
