@@ -31,7 +31,7 @@ module.exports = function (irc) {
                 var abstractText = (json.AbstractText) ? (json.AbstractText.replace(/\n/ig, ' ').replace(/<pre>.+?<\/pre>/ig, '')) + ' || ' : '';
                 var abstractSource = (json.AbstractSource && json.AbstractURL) ? json.AbstractSource + ': ' + json.AbstractURL + ' || ' : '';
                 var answerText = (json.Answer) ? json.Answer + ' || ' : '';
-                var definitionText = (json.DefinitionText && json.DefinitionURL) ? 'Definition ( ' + json.DefinitionURL + ' ): ' + json.DefinitionText + ' || ' : '';
+                var definitionText = (json.Definition && json.DefinitionURL) ? json.Definition + ' -- ' + json.DefinitionURL + ' || ' : '';
                 var redirect = (json.Redirect) ? url.resolve('https://duckduckgo.com', json.Redirect) + ' || ' : '';
                 var links = abstractText + abstractSource + answerText + definitionText + redirect;
                 if (links === '') {
