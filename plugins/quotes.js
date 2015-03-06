@@ -118,7 +118,7 @@ var Quote = function (irc) {
         },
 
         findAndVerifyUser = function findAndVerifyUser(channel, nick, sender, callback) {
-            userFiles[channel].get(nick, function (err, foundUser) {
+            userFiles[channel].get(nick.toLowerCase(), function (err, foundUser) {
                 if ((foundUser && foundUser === 'true') || has(ircAdmins, sender)) {
                     callback(null, true);
                 } else {
@@ -276,7 +276,7 @@ var Quote = function (irc) {
         },
 
         addQuote = function addQuote(channel, nick, message, sender) {
-            userFiles[channel].get(nick, function (err, user) {
+            userFiles[channel].get(nick.toLowerCase(), function (err, user) {
                 if (!err && (user || has(ircAdmins, sender))) {
                     var quoteduser = message[1].replace(':','').replace('<','').replace('>','').replace(' ',''),
                         searchname = quoteduser.toLowerCase(),
@@ -303,7 +303,7 @@ var Quote = function (irc) {
         rmQuote = function rmQuote(channel, nick, message, sender) {
             var idNumber = message[1];
             if (idNumber.match(/^\d/)) {
-                userFiles[channel].get(nick, function (err, user) {
+                userFiles[channel].get(nick.toLowerCase(), function (err, user) {
                     if (!err && (user || has(ircAdmins, sender))) {
                         quotesFiles[channel].get(idNumber, function (err, found) {
                             if (!err && found) {

@@ -3,61 +3,58 @@
 var util = require('util');
 var events = require('events');
 var ent = require('ent');
-var httpGet = require('http-get-shim');
+var request = require('request');
 var config = require('../config');
 
-var Links = function Links(irc) {
+util.inherits(Links, events.EventEmitter);
+function Links(irc) {
     'use strict';
     var self = this;
-    var urlRegex = /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/?%=~_|][^\s]+)/ig;
-    var titleRegex = /<title>.+?<\/title>/ig;
+    this.irc = irc;
+    this.titleRegex = /<title>(.*?)<\/title>/i;
+    this.urlRegex = /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/?%=~_|][^\s]+)/ig;
+    this.on('getPageTitle', this.getPageTitle)
+        .on('gotTitle', this.parseTitle)
+        .on('sendToclient', this.sendToclient);
 
-    function sendToclient(err, title, channel) {
-        if (!err && title) {
-            irc.say(channel, ent.decode(title));
-        } else if (err) {
-            irc.say(channel, err);
-        }
-    }
-    
-    function parseTitle(response, message, channel) {
-        var title = (message.match(titleRegex)) ? message.match(titleRegex)[0].replace('<title>', '').replace('</title>', '') : '';
-        var data = (response.statusCode > 299) ? 'Error ' + response.statusCode + ' ' + title : title;
-        self.emit('sendToclient', null, data, channel);
-    }
+    irc.on('message', function (from, to, message) {
+        if (from !== config.nick) return self.onMessage(to, message);
+        return;
+    });
+}
 
-    function getPageTitle(message, channel) {
-        var req = httpGet(message, function (err, response, answer) {
-            if (!err && answer) {
-                self.emit('gotTitle', response, answer, channel);
-            } else if (err) {
-                self.emit('sendToclient', err.message, null, channel);
-            }
+Links.prototype.onMessage = function onMessage(channel, msg) {
+    var self = this;
+    var message = msg.match(this.urlRegex);
+    if (message) {
+        message.forEach(function (uri) {
+            if (!/localhost|127\.|\.[zip|jpg|png|gif|gz|tar|rar|tiff]$/.test(uri)) return self.emit('getPageTitle', uri.trim(), channel);
         });
     }
-
-    this.onMessage = function (channel, msg) {
-        var message = msg.match(urlRegex);
-        if (message) {
-            message.forEach(function (uri) {
-                self.emit('getPageTitle', uri.trim(), channel);
-            });
-        }
-    };
-
-    this.on('getPageTitle', getPageTitle)
-        .on('gotTitle', parseTitle)
-        .on('sendToclient', sendToclient);
-    
-    irc.on('message', function (from, to, message) {
-        if (from !== config.nick) {
-            self.onMessage(to, message);
-        }
-    });
 };
 
-util.inherits(Links, events.EventEmitter);
+Links.prototype.sendToclient = function sendToclient(err, title, channel) {
+    if (err || title) return this.irc.say(channel, '➤➤ ' + ((!err) ? ent.decode(title) : err));
+};
+
+Links.prototype.parseTitle = function parseTitle(response, message, channel) {
+    var title = message.match(this.titleRegex);
+    title = title.length ? title[1] : '';
+    var data = (response.statusCode > 299) ? 'Error ' + response.statusCode + ' ' + title : title;
+    return self.emit('sendToclient', null, data, channel);
+};
+
+Links.prototype.getPageTitle = function getPageTitle(message, channel) {
+    var self = this;
+    return request(message, function (err, response, answer) {
+        if (!err && answer) {
+            return self.emit('gotTitle', response, answer, channel);
+        } else if (err) {
+            return self.emit('sendToclient', err.message, null, channel);
+        }
+    }).setMaxListeners(20);
+};
 
 module.exports = function (irc) {
-    return new Links(irc); 
+    return new Links(irc);
 };
