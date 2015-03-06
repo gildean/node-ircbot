@@ -41,7 +41,7 @@ Links.prototype.parseTitle = function parseTitle(response, message, channel) {
     var title = message.match(this.titleRegex);
     title = title.length ? title[1] : '';
     var data = (response.statusCode > 299) ? 'Error ' + response.statusCode + ' ' + title : title;
-    return self.emit('sendToclient', null, data, channel);
+    return this.emit('sendToclient', null, data, channel);
 };
 
 Links.prototype.getPageTitle = function getPageTitle(message, channel) {
