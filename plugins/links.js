@@ -39,7 +39,7 @@ Links.prototype.sendToclient = function sendToclient(err, title, channel) {
 
 Links.prototype.parseTitle = function parseTitle(response, message, channel) {
     var title = message.match(this.titleRegex);
-    title = title.length ? title[1] : '';
+    title = (title && title.length) ? title[1] : '';
     var data = (response.statusCode > 299) ? 'Error ' + response.statusCode + ' ' + title : title;
     return this.emit('sendToclient', null, data, channel);
 };
